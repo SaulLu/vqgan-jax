@@ -12,7 +12,7 @@ from flax.core.frozen_dict import FrozenDict
 
 from transformers.modeling_flax_utils import FlaxPreTrainedModel
 
-from configuration_vqgan import VQGANConfig
+from vqgan_jax.configuration_vqgan import VQGANConfig
 
 
 class Upsample(nn.Module):
@@ -517,6 +517,9 @@ class VQModule(nn.Module):
         quant_states, indices = self.quantize(hidden_states)
         return quant_states, indices
 
+    def quantize(self, hidden_states):
+        return self.quantize(hidden_states)
+
     def decode(self, hidden_states, deterministic: bool = True):
         hidden_states = self.post_quant_conv(hidden_states)
         hidden_states = self.decoder(hidden_states, deterministic=deterministic)
@@ -585,6 +588,11 @@ class VQGANPreTrainedModel(FlaxPreTrainedModel):
     def decode_code(self, indices, params: dict = None):
         return self.module.apply(
             {"params": params or self.params}, jnp.array(indices, dtype="i4"), method=self.module.decode_code
+        )
+
+    def quantize(self, hidden_states, params: dict = None):
+        return self.module.apply(
+            {"params": params or self.params}, jnp.array(hidden_states), method=self.module.quantize
         )
 
     def __call__(
